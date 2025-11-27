@@ -1,0 +1,18 @@
+{
+  "name": "Chat de Natal",
+  "short_name": "Natal Chat",
+  "description": "Chat natalino para 8 amigos celebrarem juntos!",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#165b33",
+  "theme_color": "#c41e3a",
+  "icons": [
+    {
+      "src": "/christmas-tree.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
