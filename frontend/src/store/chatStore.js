@@ -44,7 +44,11 @@ const useChatStore = create((set, get) => ({
     try {
       const { data } = await api.post("/messages", { content });
       socketService.sendGlobalMessage(data);
-      return { success: true };
+      // Adiciona localmente para aparecer imediatamente
+      set((state) => ({
+        globalMessages: [...state.globalMessages, data],
+      }));
+      return { success: true, data };
     } catch (error) {
       return { success: false, error: error.response?.data?.message };
     }

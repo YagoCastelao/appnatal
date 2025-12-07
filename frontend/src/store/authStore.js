@@ -116,7 +116,8 @@ const useAuthStore = create(
     }),
     {
       name: "natal-chat-auth",
-      partialize: (state) => ({ token: state.token }),
+        // Persist token and user so login survives reload
+        partialize: (state) => ({ token: state.token, user: state.user }),
     }
   )
 );
