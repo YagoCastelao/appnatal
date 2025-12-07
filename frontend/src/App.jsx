@@ -58,16 +58,26 @@ function App() {
   // Configurar listeners globais do socket
   useEffect(() => {
     if (user) {
-      socketService.connect();
-      socketService.userConnected(user._id);
+      const socket = socketService.connect();
+
+      // Emitir user_connected apenas se o socket estiver conectado
+      if (socket.connected) {
+        socketService.userConnected(user._id);
+      } else {
+        socket.on("connect", () => {
+          socketService.userConnected(user._id);
+        });
+      }
 
       // Listener para usuários online
       socketService.onOnlineUsers((users) => {
+        console.log("Online users updated:", users.length);
         setOnlineUsers(users);
       });
 
       // Listener para mudança de status
       socketService.onUserStatusChange(({ user: changedUser, status }) => {
+        console.log("User status changed:", changedUser.username, status);
         updateUserStatus(changedUser, status);
         loadUsers(); // Recarregar lista de usuários
       });

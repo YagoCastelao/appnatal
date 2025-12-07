@@ -1,6 +1,44 @@
 import { formatTime } from "./dateUtils";
 
+// Função para detectar e formatar menções
+const formatMessageWithMentions = (text) => {
+  const mentionRegex = /@(\w+)/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = mentionRegex.exec(text)) !== null) {
+    // Adicionar texto antes da menção
+    if (match.index > lastIndex) {
+      parts.push({
+        type: "text",
+        content: text.slice(lastIndex, match.index),
+      });
+    }
+
+    // Adicionar menção
+    parts.push({
+      type: "mention",
+      content: match[0],
+      username: match[1],
+    });
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Adicionar texto restante
+  if (lastIndex < text.length) {
+    parts.push({
+      type: "text",
+      content: text.slice(lastIndex),
+    });
+  }
+
+  return parts.length > 0 ? parts : [{ type: "text", content: text }];
+};
+
 const MessageBubble = ({ message, isOwn, showAvatar = true }) => {
+  const messageParts = formatMessageWithMentions(message.content);
   return (
     <div
       className={`flex gap-2 mb-3 ${isOwn ? "flex-row-reverse" : "flex-row"}`}
@@ -37,7 +75,20 @@ const MessageBubble = ({ message, isOwn, showAvatar = true }) => {
             isOwn ? "message-bubble-sent" : "message-bubble-received"
           }`}
         >
-          <p className="text-sm leading-relaxed">{message.content}</p>
+          <p className="text-sm leading-relaxed">
+            {messageParts.map((part, index) =>
+              part.type === "mention" ? (
+                <span
+                  key={index}
+                  className="font-bold text-christmas-gold bg-christmas-gold/20 px-1 rounded"
+                >
+                  {part.content}
+                </span>
+              ) : (
+                <span key={index}>{part.content}</span>
+              )
+            )}
+          </p>
         </div>
 
         {/* Horário */}
