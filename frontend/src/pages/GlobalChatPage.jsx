@@ -49,14 +49,34 @@ const GlobalChatPage = () => {
       }
     });
 
+    // Listener para usuários online
+    socket.on("online_users", (users) => {
+      useChatStore.getState().setOnlineUsers(users);
+    });
+
+    socket.on("user_status_change", ({ user: statusUser, status }) => {
+      useChatStore.getState().updateUserStatus(statusUser, status);
+    });
+
     socketService.onUserStopTypingGlobal((userId) => {
       removeTypingUser(userId);
+    });
+
+    // Listener para usuários online
+    socket.on("online_users", (users) => {
+      useChatStore.getState().setOnlineUsers(users);
+    });
+
+    socket.on("user_status_change", ({ user: statusUser, status }) => {
+      useChatStore.getState().updateUserStatus(statusUser, status);
     });
 
     return () => {
       socket?.off("new_global_message");
       socket?.off("user_typing_global");
       socket?.off("user_stop_typing_global");
+      socket?.off("online_users");
+      socket?.off("user_status_change");
     };
   }, [user]);
 

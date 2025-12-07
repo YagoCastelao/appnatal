@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import socketService from "../services/socket";
+import useChatStore from "../store/chatStore";
 
 const christmasStickers = [
   "🎄",
@@ -28,8 +29,12 @@ const MessageInput = ({
 }) => {
   const [message, setMessage] = useState("");
   const [showStickers, setShowStickers] = useState(false);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState("");
+  const [cursorPosition, setCursorPosition] = useState(0);
   const inputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const { allUsers } = useChatStore();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -51,14 +56,34 @@ const MessageInput = ({
   };
 
   const handleInputChange = (e) => {
-    setMessage(e.target.value);
+    const newValue = e.target.value;
+    const newCursorPosition = e.target.selectionStart;
+    setMessage(newValue);
+    setCursorPosition(newCursorPosition);
+
+    // Detectar menção (@)
+    const textBeforeCursor = newValue.slice(0, newCursorPosition);
+    const lastAtSymbol = textBeforeCursor.lastIndexOf("@");
+
+    if (lastAtSymbol !== -1) {
+      const textAfterAt = textBeforeCursor.slice(lastAtSymbol + 1);
+      // Só mostrar se não houver espaço depois do @
+      if (!textAfterAt.includes(" ")) {
+        setMentionSearch(textAfterAt.toLowerCase());
+        setShowMentions(true);
+      } else {
+        setShowMentions(false);
+      }
+    } else {
+      setShowMentions(false);
+    }
 
     // Indicador de digitação
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    if (e.target.value.trim()) {
+    if (newValue.trim()) {
       if (isGlobal) {
         socketService.typingGlobal({ _id: userId });
       } else if (receiverId) {
@@ -75,21 +100,52 @@ const MessageInput = ({
     }
   };
 
+  const handleMentionSelect = (username) => {
+    const textBeforeCursor = message.slice(0, cursorPosition);
+    const lastAtSymbol = textBeforeCursor.lastIndexOf("@");
+    const textAfterCursor = message.slice(cursorPosition);
+
+    const newMessage =
+      message.slice(0, lastAtSymbol) + `@${username} ` + textAfterCursor;
+
+    setMessage(newMessage);
+    setShowMentions(false);
+    inputRef.current?.focus();
+  };
+
+  // Filtrar usuários para menção
+  const filteredUsers = showMentions
+    ? allUsers
+        .filter(
+          (user) =>
+            user._id !== userId &&
+            user.username.toLowerCase().includes(mentionSearch)
+        )
+        .slice(0, 5)
+    : [];
+
   const addSticker = (sticker) => {
     setMessage((prev) => prev + sticker);
     setShowStickers(false);
   };
 
-  // Fechar stickers ao clicar fora
+  // Fechar stickers e menções ao clicar fora
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (showStickers && !e.target.closest(".stickers-panel")) {
         setShowStickers(false);
       }
+      if (showMentions && !e.target.closest(".mentions-panel")) {
+        setShowMentions(false);
+      }
     };
     document.addEventListener("touchstart", handleClickOutside);
-    return () => document.removeEventListener("touchstart", handleClickOutside);
-  }, [showStickers]);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showStickers, showMentions]);
 
   useEffect(() => {
     return () => {
@@ -101,6 +157,35 @@ const MessageInput = ({
 
   return (
     <div className="relative">
+      {/* Painel de menções */}
+      {showMentions && filteredUsers.length > 0 && (
+        <div className="mentions-panel absolute bottom-full left-0 right-0 mb-2 bg-white/95 rounded-2xl shadow-lg z-50 max-h-48 overflow-y-auto">
+          <p className="text-christmas-green text-xs font-semibold px-3 pt-2 pb-1">
+            @ Mencionar usuário
+          </p>
+          <div className="divide-y divide-christmas-gold/20">
+            {filteredUsers.map((user) => (
+              <button
+                key={user._id}
+                type="button"
+                onClick={() => handleMentionSelect(user.username)}
+                className="w-full px-3 py-2.5 flex items-center gap-2 hover:bg-christmas-gold/10 active:bg-christmas-gold/20 transition-colors text-left touch-manipulation"
+              >
+                <span className="text-xl">{user.avatar || "🎅"}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-christmas-green font-medium text-sm truncate">
+                    {user.username}
+                  </p>
+                  {user.isOnline && (
+                    <p className="text-christmas-gold text-xs">Online</p>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Painel de stickers natalinos */}
       {showStickers && (
         <div className="stickers-panel absolute bottom-full left-0 right-0 mb-2 p-3 bg-white/95 rounded-2xl shadow-lg z-50">

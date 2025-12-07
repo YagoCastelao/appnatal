@@ -40,7 +40,7 @@ const RegisterPage = () => {
   const displayError = localError || error;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-gradient-to-b from-christmas-green to-christmas-green-dark">
       <Snowfall />
 
       {/* Decoração de fundo */}
