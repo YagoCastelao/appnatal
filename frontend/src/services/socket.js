@@ -2,6 +2,11 @@ import { io } from "socket.io-client";
 
 // Detecta se está acessando via localhost ou IP da rede
 const getSocketUrl = () => {
+  // Em produção, usar a variável de ambiente
+  if (import.meta.env.VITE_SOCKET_URL) {
+    return import.meta.env.VITE_SOCKET_URL;
+  }
+  
   const hostname = window.location.hostname;
   if (hostname === "localhost" || hostname === "127.0.0.1") {
     return "http://localhost:5000";
@@ -9,7 +14,9 @@ const getSocketUrl = () => {
   return `http://${hostname}:5000`;
 };
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || getSocketUrl();
+const SOCKET_URL = getSocketUrl();
+
+console.log('🎄 Socket URL:', SOCKET_URL);
 
 class SocketService {
   constructor() {
@@ -48,6 +55,7 @@ class SocketService {
   // Emitir que usuário conectou
   userConnected(userId) {
     if (this.socket) {
+      console.log('🎅 Emitting user_connected:', userId);
       this.socket.emit("user_connected", userId);
     }
   }
@@ -119,7 +127,10 @@ class SocketService {
 
   onOnlineUsers(callback) {
     if (this.socket) {
-      this.socket.on("online_users", callback);
+      this.socket.on("online_users", (users) => {
+        console.log('📊 Received online_users:', users.length, 'users');
+        callback(users);
+      });
     }
   }
 
